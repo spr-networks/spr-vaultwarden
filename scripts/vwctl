@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# ---- Configuration ----
+VW_SCRIPT=/vaultwarden  # Path to your vw script
+PID_FILE=/var/run/vw_process.pid  # Path to save the process ID
+
+# LOG_FILE=/var/log/vw_process.log # Path to log file (optional)
+# ---- Configuration ----
+
+# Function to start the vw
+start_vw() {
+  echo "Starting vw process..."
+  # Check if the script is valid and executable
+  if [ ! -x "$VW_SCRIPT" ] ; then
+    echo "Error: $VW_SCRIPT is not an executable."
+    return 1
+  fi
+
+  # Run the vw in the background, redirect output to log file
+  if [ ! -z "$LOG_FILE" ] ; then
+      $VW_SCRIPT >> "$LOG_FILE" 2>&1 &  # Redirect output and error to log
+  else
+       set -a # make sure all of these variables are exported
+       if [ -f /configs/.env ]; then
+         . /configs/.env
+       else
+         . /configs/.env.template
+       fi
+       set +a # no need to keep exporting other variables
+        $VW_SCRIPT & 
+    # Get the Process ID of the vw
+    PID=$!  # Capture the last command's PID
+
+    # Save the PID to a file
+    echo "$PID" > "$PID_FILE"
+
+    # Echo confirmation message
+    echo "Vaultwarden process started with PID: $PID"
+  
+  fi
+}
+
+# Function to stop the vw
+stop_vw() {
+  echo "Stopping vw process..."
+
+  # Read the PID from the file
+  if [ -f "$PID_FILE" ] ; then
+    PID=$(cat "$PID_FILE")
+  else
+    echo "Error: No PID file found. Vaultwarden may not be running."
+    return 1
+  fi
+
+  # Check if the PID is valid
+  if [ ! -z "$PID" ] && kill -0 "$PID" ; then
+    kill "$PID"
+    # Wait for the process to terminate (optional)
+    wait "$PID"
+    echo "Vaultwarden process stopped successfully."
+  else
+    echo "Error: Invalid PID or process not running."
+  fi
+
+  # Remove the PID file
+  rm -f "$PID_FILE"
+}
+
+# Main logic based on the first argument
+case "$1" in
+  start)
+    start_vw
+    ;;
+  stop)
+    stop_vw
+    ;;
+  restart)
+    stop_vw
+    start_vw
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
