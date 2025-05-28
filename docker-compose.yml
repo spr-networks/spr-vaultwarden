@@ -21,8 +21,8 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-      - "${SUPERDIR}./state/plugins/vw/:/state/plugins/vw/"
+      - "${SUPERDIR}./state/plugins/vaultwarden/:/state/plugins/vaultwarden/"
       - "${SUPERDIR}./state/public/:/state/public/:ro"
-      - ./vw-data:/data
-
+      - "${SUPERDIR}./configs/plugins/vaultwarden/:/configs/"
+      - "${SUPERDIR}./configs/plugins/vaultwarden/data/:/data"
 #      - "${SUPERDIR}./state/api/:/state/api/:ro" #uncomment me for SPRBUS access

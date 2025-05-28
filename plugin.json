@@ -1,7 +1,7 @@
 {
   "Name": "spr-vaultwarden",
   "ComposeFilePath": "plugins/user/spr-vaultwarden/docker-compose.yml",
-  "UnixPath": "/state/plugins/vw/socket",
+  "UnixPath": "/state/plugins/vaultwarden/socket",
   "URI": "spr-vaultwarden",
   "HasUI": true,
   "SandboxedUI": false,
