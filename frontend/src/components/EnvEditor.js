@@ -38,7 +38,8 @@ const EnvEditor = () => {
   const [collapsedSections, setCollapsedSections] = useState({})
   const certFileRef = useRef(null)
   const keyFileRef = useRef(null)
-  const pluginURL = '/plugins/vw'
+  let pluginName = window?.SPR_PLUGIN?.URI || 'spr-vaultwarden'
+  const pluginURL = `/plugins/${pluginName}`
   const toast = useToast?.()
 
   // Fetch environment variables and SSL status on component mount
@@ -70,7 +71,7 @@ const EnvEditor = () => {
   const handleFileUpload = async (fileType) => {
     const fileInput = fileType === 'cert' ? certFileRef.current : keyFileRef.current
     const file = fileInput?.files?.[0]
-    
+
     if (!file) {
       setStatus({
         message: 'Please select a file to upload',
@@ -84,7 +85,7 @@ const EnvEditor = () => {
     const allowedExtensions = ['.pem', '.crt', '.cer', '.der', '.key', '.p12', '.pfx']
     const fileName = file.name.toLowerCase()
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext))
-    
+
     if (!hasValidExtension) {
       setStatus({
         message: `Invalid file extension. Allowed: ${allowedExtensions.join(', ')}`,
@@ -100,7 +101,7 @@ const EnvEditor = () => {
       // Read file as base64
       const fileBuffer = await file.arrayBuffer()
       const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
-      
+
       // Send as JSON with base64 encoded file data
       const payload = {
         filename: file.name,
@@ -110,18 +111,18 @@ const EnvEditor = () => {
 
       // Use api.put for consistency with environment variable API
       const response = await api.put(`${pluginURL}/api/ssl/upload?type=${fileType}`, payload)
-      
+
       setUploadLoading(prev => ({ ...prev, [fileType]: false }))
-      
+
       // Clear the file input
       if (fileInput) {
         fileInput.value = ''
       }
-      
+
       // Refresh SSL status and env vars (to get updated ROCKET_TLS)
       await fetchSSLStatus()
       await fetchEnvVars()
-      
+
       setStatus({
         message: response.message || `${fileType} file uploaded successfully`,
         type: 'success',
@@ -147,7 +148,7 @@ const EnvEditor = () => {
     } catch (err) {
       console.error(`Error uploading ${fileType} file:`, err)
       setUploadLoading(prev => ({ ...prev, [fileType]: false }))
-      
+
       setStatus({
         message: `Error uploading ${fileType} file: ${err.message}`,
         type: 'error',
@@ -178,13 +179,13 @@ const EnvEditor = () => {
 
     try {
       const response = await api.delete(`${pluginURL}/api/ssl/delete?type=${fileType}`)
-      
+
       setDeleteLoading(prev => ({ ...prev, [fileType]: false }))
-      
+
       // Refresh SSL status and env vars (to get updated ROCKET_TLS)
       await fetchSSLStatus()
       await fetchEnvVars()
-      
+
       setStatus({
         message: response.message || `${fileType} file deleted successfully`,
         type: 'success',
@@ -210,7 +211,7 @@ const EnvEditor = () => {
     } catch (err) {
       console.error(`Error deleting ${fileType} file:`, err)
       setDeleteLoading(prev => ({ ...prev, [fileType]: false }))
-      
+
       setStatus({
         message: `Error deleting ${fileType} file: ${err.message}`,
         type: 'error',
@@ -230,13 +231,13 @@ const EnvEditor = () => {
       }
     }
   }
-  
+
   // Function to fetch environment variables
   const fetchEnvVars = () => {
     setLoading(true)
     const apiURL = api.getApiURL()
     const gotAuth = api.getAuthHeaders()?.length ? true : false
-    
+
     api
       .get(`${pluginURL}/api/env`)
       .then((data) => {
@@ -256,7 +257,7 @@ const EnvEditor = () => {
             }
             return variable.key && variable.key.trim().length > 0
           })
-        
+
         setEnvVars(processedVars)
         setFilePath(data.filePath || '')
         setLoading(false)
@@ -264,24 +265,24 @@ const EnvEditor = () => {
       .catch((err) => {
         console.error('Error fetching environment variables:', err)
         let error = `Error: ${err.message || 'Failed to load environment variables'}`
-        
+
         if (!apiURL) {
           error += '. Missing REACT_APP_API'
         }
         if (!gotAuth) {
           error += '. Missing REACT_APP_TOKEN'
         }
-        
+
         setError(error)
         setLoading(false)
       })
   }
-  
+
   // Function to save environment variables
   const saveEnvVars = async () => {
     setStatus({ message: '', type: 'success', show: false })
     setSaveLoading(true)
-    
+
     try {
       const variablesToSend = envVars.map(({ key, value, enabled, isComment, isSection, originalLine, description }) => ({
         key,
@@ -292,16 +293,16 @@ const EnvEditor = () => {
         originalLine,
         description
       }))
-      
-      const payload = { 
+
+      const payload = {
         variables: variablesToSend
       }
-      
+
       const response = await api.put(`${pluginURL}/api/env`, payload)
-      
+
       // Handle successful save
       setSaveLoading(false)
-      
+
       // Update variables if returned in response
       if (response.variables) {
         const processedVars = response.variables
@@ -319,22 +320,22 @@ const EnvEditor = () => {
             }
             return variable.key && variable.key.trim().length > 0
           })
-        
+
         setEnvVars(processedVars)
       }
-      
+
       // Update file path if returned in response
       if (response.filePath) {
         setFilePath(response.filePath)
       }
-      
+
       // Show success message
       setStatus({
         message: response.message || 'Environment variables saved successfully',
         type: 'success',
         show: true
       })
-      
+
       if (toast) {
         toast.show({
           placement: "top",
@@ -346,33 +347,33 @@ const EnvEditor = () => {
           )
         })
       }
-      
+
       // Hide status message after 3 seconds
       setTimeout(() => {
         setStatus(prev => ({ ...prev, show: false }))
       }, 3000)
-      
+
     } catch (err) {
       console.error('Error saving environment variables:', err)
       setSaveLoading(false)
-      
+
       let errorMsg = `Error: ${err.message || 'Failed to save environment variables'}`
       const apiURL = api.getApiURL()
       const gotAuth = api.getAuthHeaders()?.length ? true : false
-      
+
       if (!apiURL) {
         errorMsg += '. Missing REACT_APP_API'
       }
       if (!gotAuth) {
         errorMsg += '. Missing REACT_APP_TOKEN'
       }
-      
+
       setStatus({
         message: errorMsg,
         type: 'error',
         show: true
       })
-      
+
       if (toast) {
         toast.show({
           placement: "top",
@@ -386,7 +387,7 @@ const EnvEditor = () => {
       }
     }
   }
-  
+
   // Function to clean section text for display (remove ## prefix)
   const cleanSectionText = (text) => {
     if (!text) return text
@@ -397,18 +398,18 @@ const EnvEditor = () => {
   const getOriginalIndex = (variable) => {
     return envVars.findIndex(v => v === variable)
   }
-  
+
   // Group variables by section for better UI organization
   const groupVariablesBySection = (variables) => {
     const groups = []
     let currentGroup = { section: null, variables: [] }
-    
+
     variables.forEach((variable) => {
       if (variable.isSection) {
         if (currentGroup.variables.length > 0 || currentGroup.section) {
           groups.push(currentGroup)
         }
-        currentGroup = { 
+        currentGroup = {
           section: variable,
           variables: []
         }
@@ -416,11 +417,11 @@ const EnvEditor = () => {
         currentGroup.variables.push(variable)
       }
     })
-    
+
     if (currentGroup.variables.length > 0 || currentGroup.section) {
       groups.push(currentGroup)
     }
-    
+
     return groups
   }
 
@@ -430,14 +431,14 @@ const EnvEditor = () => {
     updatedVars[index].enabled = !updatedVars[index].enabled
     setEnvVars(updatedVars)
   }
-  
+
   // Update variable value
   const updateVariableValue = (index, newValue) => {
     const updatedVars = [...envVars]
     updatedVars[index].value = newValue
     setEnvVars(updatedVars)
   }
-  
+
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionIndex) => {
     setCollapsedSections(prev => ({
@@ -445,14 +446,14 @@ const EnvEditor = () => {
       [sectionIndex]: !prev[sectionIndex]
     }))
   }
-  
+
   const groupedVariables = groupVariablesBySection(envVars)
-  
+
   // Set default collapsed state when groups change
   useEffect(() => {
     setCollapsedSections(initializeCollapsedSections(groupedVariables));
   }, [envVars.length]);
-  
+
   if (loading) {
     return (
       <Center h={300}>
@@ -460,7 +461,7 @@ const EnvEditor = () => {
       </Center>
     )
   }
-  
+
   if (error) {
     return (
       <Alert status="error" variant="solid">
@@ -469,7 +470,7 @@ const EnvEditor = () => {
       </Alert>
     )
   }
-  
+
   return (
     <VStack
       space="md"
@@ -485,7 +486,7 @@ const EnvEditor = () => {
           <Button variant="outline" onPress={() => { fetchEnvVars(); fetchSSLStatus(); }}>
             <ButtonText>Refresh</ButtonText>
           </Button>
-          <Button 
+          <Button
             onPress={saveEnvVars}
             isDisabled={saveLoading}
           >
@@ -493,10 +494,10 @@ const EnvEditor = () => {
           </Button>
         </HStack>
       </HStack>
-      
+
       {status.show && (
-        <Alert 
-          status={status.type} 
+        <Alert
+          status={status.type}
           variant="solid"
           sx={{
             bg: status.type === 'success' ? '$success700' : status.type === 'error' ? '$error700' : '$info700',
@@ -509,7 +510,7 @@ const EnvEditor = () => {
           <Text color="$white">{status.message}</Text>
         </Alert>
       )}
-      
+
       {filePath && (
         <Card>
           <Box p="$4">
@@ -520,7 +521,7 @@ const EnvEditor = () => {
           </Box>
         </Card>
       )}
-      
+
       {/* SSL Certificate Management */}
       <Card>
         <Box p="$4">
@@ -528,7 +529,7 @@ const EnvEditor = () => {
           <Text color="$textLight500" size="sm" mb="$4">
             Upload SSL certificate and private key files for Rocket TLS. Supported formats: .pem, .crt, .cer, .der, .key, .p12, .pfx
           </Text>
-          
+
           <VStack space="md">
             {/* Certificate Upload */}
             <Box>
@@ -540,7 +541,7 @@ const EnvEditor = () => {
                   </Badge>
                 )}
               </HStack>
-              
+
               {sslStatus.cert?.exists && (
                 <Box mb="$2" p="$2" bg="$backgroundLight100" borderRadius="$sm">
                   <Text fontSize="$xs" color="$textLight600">
@@ -551,7 +552,7 @@ const EnvEditor = () => {
                   </Text>
                 </Box>
               )}
-              
+
               <HStack space="sm" alignItems="center">
                 <Input flex={1}>
                   <input
@@ -580,7 +581,7 @@ const EnvEditor = () => {
                 )}
               </HStack>
             </Box>
-            
+
             {/* Private Key Upload */}
             <Box>
               <HStack justifyContent="space-between" alignItems="center" mb="$2">
@@ -591,7 +592,7 @@ const EnvEditor = () => {
                   </Badge>
                 )}
               </HStack>
-              
+
               {sslStatus.key?.exists && (
                 <Box mb="$2" p="$2" bg="$backgroundLight100" borderRadius="$sm">
                   <Text fontSize="$xs" color="$textLight600">
@@ -602,7 +603,7 @@ const EnvEditor = () => {
                   </Text>
                 </Box>
               )}
-              
+
               <HStack space="sm" alignItems="center">
                 <Input flex={1}>
                   <input
@@ -631,7 +632,7 @@ const EnvEditor = () => {
                 )}
               </HStack>
             </Box>
-            
+
             {/* SSL Status Summary */}
             {(sslStatus.cert?.exists || sslStatus.key?.exists) && (
               <Box p="$3" bg="$backgroundLight50" borderRadius="$sm">
@@ -652,7 +653,7 @@ const EnvEditor = () => {
           </VStack>
         </Box>
       </Card>
-      
+
       <ScrollView h="$3/4">
         <VStack space="md">
           {groupedVariables.map((group, groupIndex) => (
@@ -660,15 +661,15 @@ const EnvEditor = () => {
               <Box p="$4">
                 {/* Section Header */}
                 {group.section && (
-                  <Pressable 
+                  <Pressable
                     onPress={() => toggleSectionCollapse(groupIndex)}
                     mb={collapsedSections[groupIndex] ? "$0" : "$4"}
                   >
                     <HStack justifyContent="space-between" alignItems="center">
                       <HStack alignItems="center" space="md">
-                        <Text 
-                          color="$primary700" 
-                          fontWeight="bold" 
+                        <Text
+                          color="$primary700"
+                          fontWeight="bold"
                           fontSize="$lg"
                           width="$6"
                           textAlign="center"
@@ -680,7 +681,7 @@ const EnvEditor = () => {
                             {cleanSectionText(group.section.description) || cleanSectionText(group.section.originalLine) || 'Section'}
                           </Heading>
                           {group.section.originalLine && group.section.originalLine !== group.section.description && !collapsedSections[groupIndex] && (
-                            <Text 
+                            <Text
                               fontFamily="$mono"
                               fontSize="$xs"
                               color="$textLight400"
@@ -690,9 +691,9 @@ const EnvEditor = () => {
                           )}
                         </Box>
                       </HStack>
-                      <Badge 
-                        variant="outline" 
-                        size="sm" 
+                      <Badge
+                        variant="outline"
+                        size="sm"
                         action="muted"
                       >
                         <BadgeText>{group.variables.length} items</BadgeText>
@@ -700,13 +701,13 @@ const EnvEditor = () => {
                     </HStack>
                   </Pressable>
                 )}
-                
+
                 {/* Variables in this section */}
                 {!collapsedSections[groupIndex] && (
                   <VStack space="md">
                     {group.variables.map((variable) => {
                       const originalIndex = getOriginalIndex(variable)
-                      
+
                       return (
                         <Box key={originalIndex}>
                           {variable.isComment ? (
@@ -725,22 +726,22 @@ const EnvEditor = () => {
                           ) : (
                             <VStack space="sm">
                               <HStack alignItems="center" space="md">
-                                <Switch 
+                                <Switch
                                   value={variable.enabled}
                                   onValueChange={() => toggleVariable(originalIndex)}
                                 />
-                                <Text 
+                                <Text
                                   fontFamily="$mono"
                                   fontWeight="$medium"
                                 >
                                   {variable.key}
                                 </Text>
                               </HStack>
-                              
+
                               {variable.description && (
-                                <Text 
-                                  fontSize="$xs" 
-                                  color="$textLight500" 
+                                <Text
+                                  fontSize="$xs"
+                                  color="$textLight500"
                                   sx={{
                                     whiteSpace: 'pre-line'
                                   }}
@@ -748,7 +749,7 @@ const EnvEditor = () => {
                                   {variable.description}
                                 </Text>
                               )}
-                              
+
                               <FormControl isDisabled={!variable.enabled}>
                                 <Input>
                                   <InputField
@@ -778,4 +779,3 @@ const EnvEditor = () => {
 }
 
 export default EnvEditor
-

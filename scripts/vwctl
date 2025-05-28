@@ -20,14 +20,12 @@ start_vw() {
   if [ ! -z "$LOG_FILE" ] ; then
       $VW_SCRIPT >> "$LOG_FILE" 2>&1 &  # Redirect output and error to log
   else
-       set -a # make sure all of these variables are exported
        if [ -f /configs/.env ]; then
-         . /configs/.env
+         export ENV_FILE=/configs/.env
        else
-         . /configs/.env.template
+         export ENV_FILE=/configs/.env.template
        fi
-       set +a # no need to keep exporting other variables
-        $VW_SCRIPT & 
+        $VW_SCRIPT &
     # Get the Process ID of the vw
     PID=$!  # Capture the last command's PID
 
@@ -36,7 +34,7 @@ start_vw() {
 
     # Echo confirmation message
     echo "Vaultwarden process started with PID: $PID"
-  
+
   fi
 }
 
