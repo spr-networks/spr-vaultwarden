@@ -47,7 +47,7 @@ type SSLFileInfo struct {
 }
 
 const (
-	socketPath   = "/state/plugins/vw/socket"
+	socketPath   = "/state/plugins/vaultwarden/socket"
 	envPath      = "/configs/.env"
 	templatePath = "/configs/.env.template"
 	sslPath      = "/ssl"
@@ -200,7 +200,7 @@ func saveEnvVars(w http.ResponseWriter, r *http.Request) {
 					content.WriteString("\n")
 				}
 			}
-			
+
 			// Add variable with or without comment
 			if v.Enabled {
 				content.WriteString(fmt.Sprintf("%s=%s", v.Key, v.Value))
@@ -300,18 +300,18 @@ func handleSSLUpload(w http.ResponseWriter, r *http.Request) {
 	// Update ROCKET_TLS environment variable if both cert and key exist
 	certExists := fileExists(fmt.Sprintf("%s/%s*", sslPath, certFile))
 	keyExists := fileExists(fmt.Sprintf("%s/%s*", sslPath, keyFile))
-	
+
 	if certExists && keyExists {
 		// Get cert and key file paths
 		certFiles, _ := findFiles(fmt.Sprintf("%s/%s*", sslPath, certFile))
 		keyFiles, _ := findFiles(fmt.Sprintf("%s/%s*", sslPath, keyFile))
-		
+
 		if len(certFiles) > 0 && len(keyFiles) > 0 {
 			// Update ROCKET_TLS variable in .env file
 			rocketTLSValue := fmt.Sprintf("{certs=\"%s\",key=\"%s\"}", certFiles[0], keyFiles[0])
 			updateRocketTLSVariable(rocketTLSValue)
 		}
-		
+
 		// Restart vaultwarden service
 		cmd := exec.Command("/scripts/vwctl", "restart")
 		if err := cmd.Run(); err != nil {
@@ -381,7 +381,7 @@ func handleSSLStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Check cert file
 	certInfo := getSSLFileInfo(fmt.Sprintf("%s/%s*", sslPath, certFile))
-	
+
 	// Check key file
 	keyInfo := getSSLFileInfo(fmt.Sprintf("%s/%s*", sslPath, keyFile))
 
@@ -422,7 +422,7 @@ func fileExists(pattern string) bool {
 func findFiles(pattern string) ([]string, error) {
 	// Extract directory from pattern
 	dir := sslPath
-	
+
 	// Read directory
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -470,7 +470,7 @@ func updateRocketTLSVariable(tlsValue string) error {
 
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
-		
+
 		// Check if this line is ROCKET_TLS (enabled or disabled)
 		if strings.HasPrefix(trimmedLine, "ROCKET_TLS=") || strings.HasPrefix(trimmedLine, "# ROCKET_TLS=") {
 			rocketTLSFound = true
@@ -654,4 +654,3 @@ func extractDescription(lines []string, lineIndex int) string {
 	// Join the comment lines into a description
 	return strings.Join(commentLines, "\n")
 }
-
