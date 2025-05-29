@@ -36,7 +36,7 @@ RUN --mount=type=tmpfs,target=/tmpfs \
 FROM vaultwarden/server:latest
 ENV DEBIAN_FRONTEND=noninteractive
 #RUN apt-get update && apt-get install -y --no-install-recommends tcpdump && rm -rf /var/lib/apt/lists/*
-RUN apt-get update && apt-get install -y --no-install-recommends procps psmisc attr nftables iproute2 netcat-traditional iputils-ping net-tools vim-tiny nano ca-certificates curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends sudo procps psmisc attr nftables iproute2 netcat-traditional iputils-ping net-tools vim-tiny nano ca-certificates curl && rm -rf /var/lib/apt/lists/*
 #RUN setfattr -x security.capability /usr/bin/ping
 COPY scripts /scripts/
 COPY configs /configs/

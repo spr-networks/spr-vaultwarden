@@ -16,26 +16,28 @@ start_vw() {
     return 1
   fi
 
+  if [ -f /configs/.env ]; then
+    export ENV_FILE=/configs/.env
+  else
+    export ENV_FILE=/configs/.env.template
+  fi
+
   # Run the vw in the background, redirect output to log file
   if [ ! -z "$LOG_FILE" ] ; then
-      $VW_SCRIPT >> "$LOG_FILE" 2>&1 &  # Redirect output and error to log
+    sudo -E -u nobody $VW_SCRIPT >> "$LOG_FILE" 2>&1 &  # Redirect output and error to log
   else
-       if [ -f /configs/.env ]; then
-         export ENV_FILE=/configs/.env
-       else
-         export ENV_FILE=/configs/.env.template
-       fi
-        $VW_SCRIPT &
-    # Get the Process ID of the vw
-    PID=$!  # Capture the last command's PID
-
-    # Save the PID to a file
-    echo "$PID" > "$PID_FILE"
-
-    # Echo confirmation message
-    echo "Vaultwarden process started with PID: $PID"
-
+    sudo -E -u nobody $VW_SCRIPT &
   fi
+
+  # Get the Process ID of the vw
+  PID=$!  # Capture the last command's PID
+
+  # Save the PID to a file
+  echo "$PID" > "$PID_FILE"
+
+  # Echo confirmation message
+  echo "Vaultwarden process started with PID: $PID"
+
 }
 
 # Function to stop the vw
