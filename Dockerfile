@@ -40,6 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends sudo procps psm
 #RUN setfattr -x security.capability /usr/bin/ping
 COPY scripts /scripts/
 COPY configs/.env.template /
+RUN mkdir /ssl
 COPY --from=builder /spr-vaultwarden /
 COPY --from=builder-ui /app/build/ /ui/
 ENTRYPOINT ["/scripts/startup.sh"]

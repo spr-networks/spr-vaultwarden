@@ -11,8 +11,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
+	"strconv"
 	"strings"
+	"syscall"
 )
 
 // Environment variable representation
@@ -55,6 +58,11 @@ const (
 	keyFile      = "key"
 )
 
+var (
+	nobodyUID int
+	nobodyGID int
+)
+
 // Allowed file extensions for SSL files
 var allowedSSLExtensions = map[string]bool{
 	".pem": true,
@@ -66,8 +74,38 @@ var allowedSSLExtensions = map[string]bool{
 	".pfx": true,
 }
 
+func dropPrivileges() error {
+	if err := syscall.Setegid(nobodyGID); err != nil {
+		return err
+	}
+	return syscall.Seteuid(nobodyUID)
+}
+
+func restorePrivileges() error {
+	if err := syscall.Seteuid(0); err != nil {
+		return err
+	}
+	return syscall.Setegid(0)
+}
+
 func main() {
 	log.Println("Starting Vaultwarden plugin")
+
+	// Get nobody user UID/GID
+	nobodyUser, err := user.Lookup("nobody")
+	if err != nil {
+		log.Fatalf("Error looking up user 'nobody': %v", err)
+	}
+
+	nobodyUID, err = strconv.Atoi(nobodyUser.Uid)
+	if err != nil {
+		log.Fatalf("Error converting UID: %v", err)
+	}
+
+	nobodyGID, err = strconv.Atoi(nobodyUser.Gid)
+	if err != nil {
+		log.Fatalf("Error converting GID: %v", err)
+	}
 
 	// Create required directories if they don't exist
 	if err := os.MkdirAll("/configs", 0755); err != nil {
@@ -129,6 +167,10 @@ func handleEnv(w http.ResponseWriter, r *http.Request) {
 func getEnvVars(w http.ResponseWriter, r *http.Request) {
 	// Try to read .env file first, fallback to template
 	filePath := envPath
+	
+	dropPrivileges()
+	defer restorePrivileges()
+	
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 			http.Error(w, "Neither .env file nor template found", http.StatusNotFound)
@@ -162,6 +204,9 @@ func saveEnvVars(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	dropPrivileges()
+	defer restorePrivileges()
 
 	// Create backup if file exists
 	if _, err := os.Stat(envPath); err == nil {
@@ -216,6 +261,9 @@ func saveEnvVars(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to write file: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	// Restore privileges to restart service
+	restorePrivileges()
 
 	// Restart vaultwarden service
 	cmd := exec.Command("/scripts/vwctl", "restart")
@@ -277,6 +325,9 @@ func handleSSLUpload(w http.ResponseWriter, r *http.Request) {
 		destFile = fmt.Sprintf("%s/%s%s", sslPath, keyFile, ext)
 	}
 
+	dropPrivileges()
+	defer restorePrivileges()
+
 	// Create backup if file exists
 	if _, err := os.Stat(destFile); err == nil {
 		backupFile := destFile + ".bak"
@@ -311,6 +362,9 @@ func handleSSLUpload(w http.ResponseWriter, r *http.Request) {
 			rocketTLSValue := fmt.Sprintf("{certs=\"%s\",key=\"%s\"}", certFiles[0], keyFiles[0])
 			updateRocketTLSVariable(rocketTLSValue)
 		}
+
+		// Restore privileges to restart service
+		restorePrivileges()
 
 		// Restart vaultwarden service
 		cmd := exec.Command("/scripts/vwctl", "restart")
@@ -349,6 +403,9 @@ func handleSSLDelete(w http.ResponseWriter, r *http.Request) {
 	} else {
 		pattern = fmt.Sprintf("%s/%s*", sslPath, keyFile)
 	}
+
+	dropPrivileges()
+	defer restorePrivileges()
 
 	// Find files matching the pattern
 	files, err := findFiles(pattern)
@@ -393,6 +450,9 @@ func handleSSLStatus(w http.ResponseWriter, r *http.Request) {
 
 // Helper function to get SSL file info
 func getSSLFileInfo(pattern string) SSLFileInfo {
+	dropPrivileges()
+	defer restorePrivileges()
+
 	files, err := findFiles(pattern)
 	if err != nil || len(files) == 0 {
 		return SSLFileInfo{Exists: false}
@@ -450,6 +510,9 @@ func findFiles(pattern string) ([]string, error) {
 
 // Update ROCKET_TLS variable in .env file
 func updateRocketTLSVariable(tlsValue string) error {
+	dropPrivileges()
+	defer restorePrivileges()
+
 	// Read current .env file content
 	content, err := ioutil.ReadFile(envPath)
 	if err != nil {
