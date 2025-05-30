@@ -10,7 +10,6 @@ x-labels:
 services:
   spr_vaultwarden:
     container_name: spr_vaultwarden
-    image: vaultwarden/server:latest
     network_mode: ${NETWORK_MODE:-host}
     environment:
       ROCKET_PORT: "8989"
@@ -23,6 +22,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - "${SUPERDIR}./state/plugins/vaultwarden/:/state/plugins/vaultwarden/"
       - "${SUPERDIR}./state/public/:/state/public/:ro"
-      - "${SUPERDIR}./configs/plugins/vaultwarden/:/configs/"
+      - "${SUPERDIR}./configs/plugins/vaultwarden/configs:/configs/"
       - "${SUPERDIR}./configs/plugins/vaultwarden/data/:/data"
 #      - "${SUPERDIR}./state/api/:/state/api/:ro" #uncomment me for SPRBUS access

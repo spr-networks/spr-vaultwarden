@@ -49,7 +49,7 @@ type SSLFileInfo struct {
 const (
 	socketPath   = "/state/plugins/vaultwarden/socket"
 	envPath      = "/configs/.env"
-	templatePath = "/configs/.env.template"
+	templatePath = "/.env.template"
 	sslPath      = "/ssl"
 	certFile     = "cert"
 	keyFile      = "key"
