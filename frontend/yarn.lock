@@ -2993,6 +2993,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
+"@spr-networks/plugin-ui@github:spr-networks/spr-plugin-ui":
+  version "0.2.0"
+  resolved "https://codeload.github.com/spr-networks/spr-plugin-ui/tar.gz/4f1bb21f5702e1c02fac464f9c7092008988bb23"
+
 "@surma/rollup-plugin-off-main-thread@^2.2.3":
   version "2.2.3"
   resolved "https://registry.npmjs.org/@surma/rollup-plugin-off-main-thread/-/rollup-plugin-off-main-thread-2.2.3.tgz"
