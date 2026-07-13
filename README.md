@@ -1,34 +1,64 @@
-## About
+# Vaultwarden for SPR
 
-Run vaultwarden on your spr.  Vaultwarden is a lightweight Bitwarden compatible server, written in Rust.  This allows you self host your password vaults.  This plugin
-should be used to configure vaultwarden.  if you enable the admin page (e.g. set the ADMIN_TOKEN), then any changes made via the admin page will supercede the spr plugin
-config.
+Run a private, Bitwarden-compatible password vault on an SPR router. The plugin packages the Vaultwarden server, an SPR-native management UI, persistent configuration, and direct TLS certificate management in one container.
 
-This reduces the attack surface of vaultwarden, as the admin functionality is no longer accessible over the same port as the vault api.
+Vaultwarden listens on port `8989` by default. The management API and UI are exposed to SPR through `/state/plugins/vaultwarden/socket`.
 
-## Overview
+## Install
 
-This is still in alpha, and there is a high probability that things will change.  
+Install from the SPR plugin UI, or use the command-line helper:
 
-As it exists today:
+```sh
+./install.sh
+```
 
-1. This installs the spr plugin code inside of the vaultwarden/server docker container (along with some additional supporting command line tools)
-2. It currently listens on port 8989 by default on the IP address of the SPR, might need to revisit what form of docker networking we want to use
+The compose project stores persistent data below these SPR directories:
 
-BUGS/TODO
-1. After the first configuration change, you might not see any debugging information in the container logs. A container restart will fix that.  
-2. Maybe have a reverse proxy in front
-3. Probably need to not use vaultwarden/latest to avoid unintentionally breaking the plugin.
-4. Maybe a preflight security review 
+- `state/plugins/vaultwarden/` — plugin socket and state
+- `configs/plugins/vaultwarden/configs/` — `.env` configuration
+- `configs/plugins/vaultwarden/data/` — the encrypted vault database and attachments
 
-## HTTPS Support
+## Configure
 
-The Bitwarden clients use web crypto APIs to communicate with the servers.  These APIs require the use of HTTPS, unless you are connecting to loopback.  The certificates cannot be self signed certificates.   
+Open **Plugins → Vaultwarden** in SPR. The UI separates normal administration from the full upstream configuration:
 
-You can either:
+- **Overview** — deployment health, essential settings, and TLS files
+- **Access** — registration, invitations, organizations, hints, and admin access
+- **Email** — SMTP delivery for invitations and security notifications
+- **Advanced** — searchable access to every setting, one category at a time
 
-1. use the spr plugin ui (recommended) to upload the cert and key file, and then enable ROCKET_TLS 
-2. install a cert by logging into the spr on the command line and follow https://github.com/dani-garcia/vaultwarden/wiki/Enabling-HTTPS for ROCKET_TLS
-3. ssh portforward into the spr like so: ssh -L 8989:localhost:8989 ubuntu@spr.local (web crypto APIs don't require SSL use over localhost)
-4. YOLO it with socat or other form of TCP proxy
+Changes are staged until **Apply changes** is selected. Applying writes `/configs/.env` and restarts Vaultwarden once. If the optional Vaultwarden admin page is enabled, changes made there may override values managed by this plugin.
 
+## HTTPS
+
+Bitwarden clients require a trusted HTTPS origin for Web Crypto features. Self-signed certificates are generally not accepted.
+
+Choose one of these approaches:
+
+1. Upload a matching trusted certificate and private key on the plugin Overview, then enable `ROCKET_TLS` under **Advanced → Rocket settings**.
+2. Terminate HTTPS at a trusted reverse proxy and set `DOMAIN` to its public HTTPS URL.
+3. For local maintenance only, forward the service to loopback:
+
+   ```sh
+   ssh -L 8989:localhost:8989 ubuntu@spr.local
+   ```
+
+See the [Vaultwarden HTTPS documentation](https://github.com/dani-garcia/vaultwarden/wiki/Enabling-HTTPS) for certificate and proxy details.
+
+## Reproducible builds and CI
+
+Build inputs are pinned in `reproducible.env`, including the Vaultwarden release image, BuildKit, Node, Ubuntu snapshot, and Go toolchain. Refresh them with:
+
+```sh
+./update-pins.sh
+git diff
+```
+
+`./build_docker_compose.sh --load` produces a local image with normalized timestamps. The GitHub Actions workflows follow the other SPR plugins:
+
+- pushes to `main` and `dev` create semantic version tags when commit messages request a bump;
+- `dev` publishes `latest-dev` and versioned development images;
+- successful `main` version workflows publish versioned and `latest` multi-architecture images to GHCR;
+- published images are signed with keyless Sigstore identities and receive SLSA provenance attestations.
+
+The upstream Vaultwarden runtime is pinned to an immutable version and manifest digest, so a rebuild cannot silently pick up a different server image.

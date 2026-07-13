@@ -4,17 +4,19 @@ x-logging:
 
 x-labels:
   &default-labels
-  org.supernetworks.ci: ${CI:-false}
+  # Constant so image digests are reproducible across local and CI builds.
+  org.supernetworks.ci: "true"
   org.supernetworks.version: ${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:-}
 
 services:
   spr_vaultwarden:
     container_name: spr_vaultwarden
+    image: ghcr.io/spr-networks/spr-vaultwarden:${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:-}
     network_mode: ${NETWORK_MODE:-host}
     environment:
       ROCKET_PORT: "8989"
     build:
-      context: .
+      context: "${BUILDCTX:-.}"
       labels: *default-labels
     logging: *default-logging
     volumes:

@@ -4,6 +4,7 @@
   "UnixPath": "/state/plugins/vaultwarden/socket",
   "URI": "spr-vaultwarden",
   "HasUI": true,
+  "Icon": "Lock",
   "SandboxedUI": false,
   "InstallTokenPath": "",
   "Enabled": true
