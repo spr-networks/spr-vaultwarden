@@ -49,6 +49,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends sudo procps psmisc attr nftables iproute2 netcat-traditional iputils-ping net-tools vim-tiny nano ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY scripts /scripts/
 COPY configs/.env.template /
+RUN mkdir /ssl
 COPY --from=builder /spr-vaultwarden /
 COPY --from=builder-ui /app/build/ /ui/
 ENTRYPOINT ["/scripts/startup.sh"]
