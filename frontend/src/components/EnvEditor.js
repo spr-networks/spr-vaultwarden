@@ -600,6 +600,9 @@ export default function EnvEditor() {
   const emailReady = !!smtpHost?.variable.enabled && !!smtpHost.variable.value
   const registrationsClosed = !!signups?.variable.enabled && signups.variable.value === 'false'
   const directTLSReady = tlsFiles === 2 && !!rocketTLS?.variable.enabled
+  const configurationSource = filePath === '/configs/.env'
+    ? 'Saved configuration'
+    : 'Built-in defaults'
   const query = advancedSearch.trim().toLowerCase()
   const searchResults = query
     ? configEntries.filter(({ variable }) =>
@@ -712,7 +715,7 @@ export default function EnvEditor() {
               <StatTile label="Email" value={emailReady ? 'Configured' : 'Not configured'} />
             </HStack>
             <VStack mt="$4" space="xs">
-              <KeyVal label="Configuration" value={filePath || 'Built-in template'} mono />
+              <KeyVal label="Configuration source" value={configurationSource} />
               <KeyVal label="Service port" value="8989" mono />
             </VStack>
           </Card>

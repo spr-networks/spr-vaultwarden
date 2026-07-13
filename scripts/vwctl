@@ -19,7 +19,7 @@ start_vw() {
   if [ -f /configs/.env ]; then
     export ENV_FILE=/configs/.env
   else
-    export ENV_FILE=/configs/.env.template
+    export ENV_FILE=/.env.template
   fi
 
   # Run the vw in the background, redirect output to log file
