@@ -1,0 +1,61 @@
+#!/bin/bash
+# Reproducible build: pins from reproducible.env, normalized source timestamps,
+# and deterministic file modes for every COPY layer.
+set -uo pipefail
+cd "$(dirname "$0")" || exit 1
+
+set -a
+# shellcheck disable=SC1091
+. ./reproducible.env
+set +a
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-0}"
+echo "SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}"
+
+[ -d .git ] && find . -path ./.git -prune -o -exec chmod go-w {} +
+
+BAKE_SET=()
+while IFS='=' read -r k v; do
+  case "$k" in ''|\#*) continue;; esac
+  BAKE_SET+=(--set "*.args.${k}=${v}")
+done < <(grep -vE '^[[:space:]]*(#|$)' reproducible.env)
+BAKE_SET+=(--set "*.args.SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}")
+
+shopt -s expand_aliases
+if ! command -v docker-compose >/dev/null 2>&1; then
+  alias docker-compose='docker compose'
+fi
+
+if docker --help | grep -q buildx; then
+  if docker buildx inspect super-builder >/dev/null 2>&1; then
+    CURRENT_BUILDKIT=$(docker buildx inspect super-builder \
+      | sed -n 's/.*image="\([^"]*\)".*/\1/p' | head -1)
+    if [ -n "${BUILDKIT_REF:-}" ] && [ "$CURRENT_BUILDKIT" != "${BUILDKIT_REF}" ]; then
+      docker buildx rm super-builder
+    fi
+  fi
+  docker buildx create --name super-builder --driver docker-container \
+    --driver-opt "image=${BUILDKIT_REF}" 2>/dev/null || true
+
+  OUTPUT="type=docker,rewrite-timestamp=true"
+  ARGS=()
+  for a in "$@"; do
+    case "$a" in
+      --load) ;;
+      --push) OUTPUT="type=registry,rewrite-timestamp=true" ;;
+      *) ARGS+=("$a") ;;
+    esac
+  done
+  docker buildx bake --builder super-builder --file docker-compose.yml \
+    "${BAKE_SET[@]}" --set "*.output=${OUTPUT}" ${ARGS[@]+"${ARGS[@]}"}
+else
+  export DOCKER_BUILDKIT=1
+  export COMPOSE_DOCKER_CLI_BUILD=1
+  docker-compose build "$@"
+fi
+
+ret=$?
+if [ "$ret" -ne 0 ]; then
+  echo "Tip: if the build failed to resolve domain names, run"
+  echo "./base/docker_nftables_setup.sh on the SPR host."
+  exit "$ret"
+fi

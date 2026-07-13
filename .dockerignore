@@ -1,0 +1,9 @@
+# Keep the build context deterministic and small. Dependencies and generated
+# output are rebuilt from their lockfiles inside the image.
+.git
+**/node_modules
+frontend/build
+**/*.log
+.DS_Store
+configs/.env
+state/
