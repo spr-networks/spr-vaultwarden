@@ -3,9 +3,11 @@ ARG ALPINE_REF=alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a
 ARG UBUNTU_REF=ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
 ARG NODE_REF=node:18@sha256:c6ae79e38498325db67193d391e6ec1d224d96c693a8a4d943498556716d3783
 ARG VAULTWARDEN_REF=vaultwarden/server:1.36.0@sha256:d626d04934cd1192ad8ced1adb975099fca78cec33ab467d2d3c923cde7f3b0c
+ARG SPR_KRUN_PLUGIN_REF=ghcr.io/spr-networks/spr-krun-plugin:latest
 ARG SOURCE_DATE_EPOCH
 
 FROM ${ALPINE_REF} AS cacerts
+FROM ${SPR_KRUN_PLUGIN_REF} AS krun-plugin
 
 FROM ${UBUNTU_REF} AS builder
 ENV DEBIAN_FRONTEND=noninteractive
@@ -46,10 +48,13 @@ RUN --mount=type=tmpfs,target=/root/.cache \
 # image digest prevents the server itself from changing between builds.
 FROM ${VAULTWARDEN_REF}
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends sudo procps psmisc attr nftables iproute2 netcat-traditional iputils-ping net-tools vim-tiny nano ca-certificates curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends sudo procps psmisc attr nftables iproute2 netcat-traditional iputils-ping net-tools vim-tiny nano ca-certificates curl util-linux && rm -rf /var/lib/apt/lists/*
+COPY --from=krun-plugin /usr/local/bin/spr-krun-init /usr/local/bin/
+COPY --from=krun-plugin /usr/local/bin/spr-krun-vsock-proxy /usr/local/bin/
 COPY scripts /scripts/
 COPY configs/.env.template /
 RUN mkdir /ssl
 COPY --from=builder /spr-vaultwarden /
 COPY --from=builder-ui /app/build/ /ui/
-ENTRYPOINT ["/scripts/startup.sh"]
+ENTRYPOINT ["/usr/local/bin/spr-krun-init"]
+CMD ["/scripts/startup.sh"]

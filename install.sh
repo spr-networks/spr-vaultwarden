@@ -15,8 +15,8 @@ CONFIG_DIR="$SUPERDIR/configs/plugins/vaultwarden"
 STATE_DIR="$SUPERDIR/state/plugins/vaultwarden"
 mkdir -p "$CONFIG_DIR/configs" "$CONFIG_DIR/data" "$STATE_DIR"
 
-docker compose build
-docker compose up -d
+docker compose -f docker-compose-krun.yml build
+docker compose -f docker-compose-krun.yml up -d
 
 echo ""
 echo "[+] spr-vaultwarden installed. Configure it under Plugins > Vaultwarden."
