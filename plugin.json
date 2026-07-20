@@ -1,6 +1,6 @@
 {
   "Name": "spr-vaultwarden",
-  "ComposeFilePath": "plugins/user/spr-vaultwarden/docker-compose-krun.yml",
+  "Runtime": "kvm",
   "UnixPath": "/state/plugins/vaultwarden/socket",
   "URI": "spr-vaultwarden",
   "HasUI": true,
