@@ -19,11 +19,6 @@ services:
     environment:
       SPR_KRUN_PLUGIN_SOCKET: "/run/spr-krun-plugin/spr-vaultwarden.sock"
       SPR_KRUN_VSOCK_PORT: "4040"
-    volumes: !override
-      - "${SUPERDIR}./state/plugins/vaultwarden/:/state/plugins/vaultwarden/"
-      - "${SUPERDIR}./state/public/:/state/public/:ro"
-      - "${SUPERDIR}./configs/plugins/vaultwarden/configs:/configs/"
-      - "${SUPERDIR}./configs/plugins/vaultwarden/data/:/data"
     devices:
       - "/dev/net/tun:/dev/net/tun"
 
