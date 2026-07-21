@@ -5,6 +5,8 @@ services:
       service: spr_vaultwarden
     image: ghcr.io/spr-networks/spr-vaultwarden:${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:--krun}
     runtime: ${SPR_KRUN_RUNTIME:-spr-krun}
+    healthcheck:
+      disable: true
     network_mode: !reset null
     networks:
       vaultwardennet:

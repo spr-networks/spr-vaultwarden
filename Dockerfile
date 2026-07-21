@@ -56,5 +56,6 @@ COPY configs/.env.template /
 RUN mkdir /ssl
 COPY --from=builder /spr-vaultwarden /
 COPY --from=builder-ui /app/build/ /ui/
+HEALTHCHECK NONE
 ENTRYPOINT ["/usr/local/bin/spr-krun-init"]
 CMD ["/scripts/startup.sh"]
