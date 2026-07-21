@@ -8,7 +8,7 @@
   "SandboxedUI": false,
   "InstallTokenPath": "",
   "NetworkCapabilities": {
-    "Interface": "kvaultwarden0",
+    "Interface": "spr-vaultwarden",
     "DeviceMAC": "02:53:50:52:4b:13",
     "Policies": ["wan", "dns", "lan"],
     "Groups": []

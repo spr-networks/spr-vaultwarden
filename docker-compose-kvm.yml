@@ -3,12 +3,16 @@ services:
     extends:
       file: docker-compose.yml
       service: spr_vaultwarden
+    image: ghcr.io/spr-networks/spr-vaultwarden:${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:--krun}
     runtime: ${SPR_KRUN_RUNTIME:-spr-krun}
-    network_mode: host
+    network_mode: !reset null
+    networks:
+      vaultwardennet:
     annotations:
       krun.cpus: "${SPR_KRUN_CPUS:-2}"
       krun.ram_mib: "${SPR_KRUN_RAM_MIB:-1024}"
-      krun.tap_name: "kvaultwarden0"
+      krun.tap_name: "kruntap0"
+      krun.net_uplink: "eth0"
       krun.net_mac: "${SPR_KRUN_MAC:-02:53:50:52:4b:13}"
       krun.vsock_path: "/state/plugins/vaultwarden/socket"
       krun.vsock_port: "4040"
@@ -17,3 +21,9 @@ services:
       SPR_KRUN_VSOCK_PORT: "4040"
     devices:
       - "/dev/net/tun:/dev/net/tun"
+
+networks:
+  vaultwardennet:
+    name: spr-vaultwarden
+    driver_opts:
+      com.docker.network.bridge.name: spr-vaultwarden
