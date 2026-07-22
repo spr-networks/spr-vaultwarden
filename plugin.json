@@ -1,7 +1,7 @@
 {
   "Name": "spr-vaultwarden",
   "Runtime": "kvm",
-  "UnixPath": "/state/plugins/vaultwarden/socket",
+  "UnixPath": "/state/plugins/vaultwarden/socket.sock",
   "URI": "spr-vaultwarden",
   "HasUI": true,
   "Icon": "Lock",

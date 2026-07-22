@@ -2,7 +2,7 @@
 
 Run a private, Bitwarden-compatible password vault on an SPR router. The plugin packages the Vaultwarden server, an SPR-native management UI, persistent configuration, and direct TLS certificate management in one container.
 
-Vaultwarden listens on port `8989` by default. The management API and UI are exposed to SPR through `/state/plugins/vaultwarden/socket`.
+Vaultwarden listens on port `8989` by default. The management API and UI are exposed to SPR through `/state/plugins/vaultwarden/socket.sock`.
 
 ## Install
 
