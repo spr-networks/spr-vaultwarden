@@ -1,10 +1,16 @@
 {
   "Name": "spr-vaultwarden",
-  "ComposeFilePath": "plugins/user/spr-vaultwarden/docker-compose.yml",
+  "Runtime": "kvm",
   "UnixPath": "/state/plugins/vaultwarden/socket",
   "URI": "spr-vaultwarden",
   "HasUI": true,
   "Icon": "Lock",
-  "SandboxedUI": false,
+  "SandboxedUI": true,
+  "NetworkCapabilities": {
+    "Interface": "spr-vaultwarden",
+    "DeviceMAC": "02:53:50:52:4b:13",
+    "Policies": ["wan", "dns", "lan"],
+    "Groups": []
+  },
   "Enabled": true
 }

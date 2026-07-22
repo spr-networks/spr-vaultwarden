@@ -50,7 +50,7 @@ type SSLFileInfo struct {
 }
 
 const (
-	socketPath   = "/state/plugins/vaultwarden/socket"
+	socketPath   = "/run/spr-krun-plugin/spr-vaultwarden.sock"
 	envPath      = "/configs/.env"
 	templatePath = "/.env.template"
 	sslPath      = "/ssl"
