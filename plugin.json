@@ -6,6 +6,5 @@
   "HasUI": true,
   "Icon": "Lock",
   "SandboxedUI": false,
-  "InstallTokenPath": "",
   "Enabled": true
 }
