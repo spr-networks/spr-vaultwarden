@@ -11,7 +11,7 @@ x-labels:
 services:
   spr_vaultwarden:
     container_name: spr_vaultwarden
-    image: ghcr.io/spr-networks/spr-vaultwarden:${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:-}
+    image: ghcr.io/spr-networks/spr-vaultwarden:latest
     network_mode: ${NETWORK_MODE:-host}
     environment:
       ROCKET_PORT: "8989"
