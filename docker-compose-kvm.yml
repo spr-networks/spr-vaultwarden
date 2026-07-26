@@ -4,6 +4,7 @@ services:
       file: docker-compose.yml
       service: spr_vaultwarden
     image: ghcr.io/spr-networks/spr-vaultwarden:latest
+    build: !reset null
     runtime: ${SPR_KRUN_RUNTIME:-spr-krun}
     healthcheck:
       disable: true
@@ -32,3 +33,4 @@ networks:
     name: spr-vaultwarden
     driver_opts:
       com.docker.network.bridge.name: spr-vaultwarden
+      com.docker.network.bridge.inhibit_ipv4: "true"
