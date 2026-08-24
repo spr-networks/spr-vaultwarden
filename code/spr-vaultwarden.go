@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -43,20 +44,27 @@ type SSLUploadRequest struct {
 
 // SSL file info structure
 type SSLFileInfo struct {
-	Name     string `json:"name"`
-	Size     int64  `json:"size"`
-	ModTime  string `json:"modTime"`
-	Exists   bool   `json:"exists"`
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+	Exists  bool   `json:"exists"`
 }
 
 const (
-	socketPath   = "/run/spr-krun-plugin/spr-vaultwarden.sock"
-	envPath      = "/configs/.env"
-	templatePath = "/.env.template"
-	sslPath      = "/ssl"
-	certFile     = "cert"
-	keyFile      = "key"
+	defaultSocketPath = "/state/plugins/vaultwarden/socket.sock"
+	envPath           = "/configs/.env"
+	templatePath      = "/.env.template"
+	sslPath           = "/ssl"
+	certFile          = "cert"
+	keyFile           = "key"
 )
+
+func pluginSocketPath() string {
+	if path := os.Getenv("SPR_KRUN_PLUGIN_SOCKET"); path != "" {
+		return path
+	}
+	return defaultSocketPath
+}
 
 var (
 	nobodyUID int
@@ -126,6 +134,11 @@ func main() {
 	fs := http.FileServer(http.Dir("/ui"))
 	http.Handle("/", fs)
 
+	socketPath := pluginSocketPath()
+	if err := os.MkdirAll(filepath.Dir(socketPath), 0755); err != nil {
+		log.Fatalf("Error creating socket directory: %v", err)
+	}
+
 	// Clean up the socket if it exists
 	if _, err := os.Stat(socketPath); err == nil {
 		if err := os.Remove(socketPath); err != nil {
@@ -167,10 +180,10 @@ func handleEnv(w http.ResponseWriter, r *http.Request) {
 func getEnvVars(w http.ResponseWriter, r *http.Request) {
 	// Try to read .env file first, fallback to template
 	filePath := envPath
-	
+
 	dropPrivileges()
 	defer restorePrivileges()
-	
+
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 			http.Error(w, "Neither .env file nor template found", http.StatusNotFound)
